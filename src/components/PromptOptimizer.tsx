@@ -4,6 +4,7 @@ import { Sparkles, Copy, Lightbulb, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const PromptOptimizer = () => {
   const [userInput, setUserInput] = useState('');
@@ -12,7 +13,7 @@ const PromptOptimizer = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const { toast } = useToast();
 
-  const optimizePrompt = () => {
+  const optimizePrompt = async () => {
     if (!userInput.trim()) {
       toast({
         title: "¡Ups!",
@@ -24,64 +25,33 @@ const PromptOptimizer = () => {
 
     setIsOptimizing(true);
 
-    // Simulamos el proceso de optimización con un delay
-    setTimeout(() => {
-      const optimized = generateOptimizedPrompt(userInput);
-      const explanation = generateTip(userInput, optimized);
-      
-      setOptimizedPrompt(optimized);
-      setTip(explanation);
-      setIsOptimizing(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('optimize-prompt', {
+        body: { userInput: userInput.trim() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setOptimizedPrompt(data.optimizedPrompt);
+      setTip(data.explanation);
 
       toast({
         title: "¡Prompt optimizado!",
-        description: "Tu prompt ha sido mejorado y está listo para usar.",
+        description: "Tu prompt ha sido mejorado con IA y está listo para usar.",
       });
-    }, 1500);
-  };
 
-  const generateOptimizedPrompt = (input: string) => {
-    // Lógica básica de optimización de prompts
-    const improvements = [];
-    let optimized = input.trim();
-
-    // Agregar contexto si no lo tiene
-    if (!optimized.toLowerCase().includes('actúa como') && !optimized.toLowerCase().includes('eres')) {
-      improvements.push('contexto de rol');
-      optimized = `Actúa como un experto en el tema. ${optimized}`;
+    } catch (error) {
+      console.error('Error optimizing prompt:', error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al optimizar tu prompt. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOptimizing(false);
     }
-
-    // Agregar especificidad
-    if (!optimized.includes('específico') && !optimized.includes('detallado')) {
-      improvements.push('solicitud de especificidad');
-      optimized += ' Proporciona una respuesta específica y detallada.';
-    }
-
-    // Agregar formato si no lo tiene
-    if (!optimized.toLowerCase().includes('formato') && !optimized.toLowerCase().includes('estructura')) {
-      improvements.push('estructura clara');
-      optimized += ' Organiza tu respuesta de manera clara y estructurada.';
-    }
-
-    // Agregar ejemplos si es relevante
-    if (optimized.toLowerCase().includes('ejemplo') || optimized.toLowerCase().includes('como')) {
-      improvements.push('solicitud de ejemplos');
-      optimized += ' Incluye ejemplos prácticos cuando sea posible.';
-    }
-
-    return optimized;
-  };
-
-  const generateTip = (original: string, optimized: string) => {
-    const tips = [
-      "He agregado contexto de rol para que la IA entienda mejor su función.",
-      "Incluí una solicitud de especificidad para obtener respuestas más detalladas.",
-      "Agregué estructura para organizar mejor la información.",
-      "El prompt ahora solicita ejemplos prácticos para mayor claridad.",
-      "Mejoré la claridad del lenguaje para resultados más precisos."
-    ];
-
-    return tips[Math.floor(Math.random() * tips.length)];
   };
 
   const copyToClipboard = async () => {
@@ -142,7 +112,7 @@ const PromptOptimizer = () => {
           {isOptimizing ? (
             <div className="flex items-center space-x-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Optimizando prompt...</span>
+              <span>Optimizando con IA...</span>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
