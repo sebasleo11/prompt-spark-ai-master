@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Sparkles, Copy, Lightbulb, ArrowRight, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ const PromptOptimizer = () => {
   const [optimizedPrompt, setOptimizedPrompt] = useState('');
   const [tip, setTip] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState('https://your-n8n-instance.com/webhook/optimize-prompt');
+  const [webhookUrl, setWebhookUrl] = useState('https://n8n-n8n.zdkcmv.easypanel.host/webhook-test/2bcf1bc5-b23e-4ad7-9aba-1fe6293be019');
   const [showSettings, setShowSettings] = useState(false);
   const { toast } = useToast();
 
@@ -138,7 +137,7 @@ const PromptOptimizer = () => {
                   <Input
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://your-n8n-instance.com/webhook/optimize-prompt"
+                    placeholder="https://n8n-n8n.zdkcmv.easypanel.host/webhook-test/..."
                     className="bg-slate-800 border-slate-600 text-white"
                   />
                   <p className="text-xs text-slate-400 mt-1">
