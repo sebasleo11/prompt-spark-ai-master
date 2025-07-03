@@ -1,16 +1,19 @@
 
 import { useState } from 'react';
-import { Sparkles, Copy, Lightbulb, ArrowRight } from 'lucide-react';
+import { Sparkles, Copy, Lightbulb, ArrowRight, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const PromptOptimizer = () => {
   const [userInput, setUserInput] = useState('');
   const [optimizedPrompt, setOptimizedPrompt] = useState('');
   const [tip, setTip] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('https://your-n8n-instance.com/webhook/optimize-prompt');
+  const [showSettings, setShowSettings] = useState(false);
   const { toast } = useToast();
 
   const optimizePrompt = async () => {
@@ -23,19 +26,48 @@ const PromptOptimizer = () => {
       return;
     }
 
+    if (!webhookUrl.trim()) {
+      toast({
+        title: "Error de configuración",
+        description: "Por favor, configura la URL del webhook en ajustes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsOptimizing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('optimize-prompt', {
-        body: { userInput: userInput.trim() }
+      console.log('Enviando solicitud al webhook n8n:', webhookUrl);
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: userInput.trim()
+        }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setOptimizedPrompt(data.optimizedPrompt);
-      setTip(data.explanation);
+      const data = await response.json();
+      console.log('Respuesta del webhook:', data);
+
+      // Asumiendo que el webhook devuelve { optimizedPrompt: "...", explanation: "..." }
+      // Ajusta estas propiedades según lo que devuelva tu webhook de n8n
+      const optimizedText = data.optimizedPrompt || data.prompt || data.result || '';
+      const explanation = data.explanation || data.tip || 'Prompt optimizado usando IA avanzada.';
+
+      if (!optimizedText) {
+        throw new Error('No se recibió un prompt optimizado válido del webhook');
+      }
+
+      setOptimizedPrompt(optimizedText);
+      setTip(explanation);
 
       toast({
         title: "¡Prompt optimizado!",
@@ -46,7 +78,7 @@ const PromptOptimizer = () => {
       console.error('Error optimizing prompt:', error);
       toast({
         title: "Error",
-        description: "Hubo un problema al optimizar tu prompt. Inténtalo de nuevo.",
+        description: "Hubo un problema al conectar con el servicio de optimización. Verifica la URL del webhook.",
         variant: "destructive",
       });
     } finally {
@@ -78,11 +110,51 @@ const PromptOptimizer = () => {
       <div className="text-center space-y-4 mb-12">
         <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 px-4 py-2 rounded-full border border-neon-blue/30 mb-4">
           <Sparkles className="w-4 h-4 text-neon-blue" />
-          <span className="text-sm text-neon-blue font-medium">Potencia tus prompts con IA</span>
+          <span className="text-sm text-neon-blue font-medium">Optimización de Prompt IA</span>
         </div>
-        <h1 className="text-4xl md:text-6xl font-bold neon-text mb-4 animate-float">
-          Transforma tus ideas
-        </h1>
+        <div className="flex items-center justify-center space-x-4">
+          <h1 className="text-4xl md:text-6xl font-bold neon-text mb-4 animate-float">
+            Transforma tus ideas
+          </h1>
+          <Dialog open={showSettings} onOpenChange={setShowSettings}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="border-neon-blue/30 hover:border-neon-blue hover:bg-neon-blue/10"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-900 border-slate-700">
+              <DialogHeader>
+                <DialogTitle className="text-white">Configuración del Webhook</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-300 mb-2 block">
+                    URL del Webhook de n8n
+                  </label>
+                  <Input
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://your-n8n-instance.com/webhook/optimize-prompt"
+                    className="bg-slate-800 border-slate-600 text-white"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    Esta URL debe apuntar a tu webhook de n8n configurado para optimizar prompts
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowSettings(false)}
+                  className="w-full bg-neon-blue hover:bg-neon-blue/80"
+                >
+                  Guardar
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <p className="text-xl text-slate-300 max-w-2xl mx-auto">
           Convierte cualquier idea en un prompt optimizado y efectivo para IA. 
           Sin complicaciones, sin tecnicismos.
