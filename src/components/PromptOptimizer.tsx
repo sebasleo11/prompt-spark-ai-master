@@ -11,7 +11,7 @@ const PromptOptimizer = () => {
   const [optimizedPrompt, setOptimizedPrompt] = useState('');
   const [tip, setTip] = useState('');
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState('https://n8n-n8n.zdkcmv.easypanel.host/webhook-test/2bcf1bc5-b23e-4ad7-9aba-1fe6293be019');
+  const [webhookUrl, setWebhookUrl] = useState('https://n8n-n8n.zdkcmv.easypanel.host/webhook/2bcf1bc5-b23e-4ad7-9aba-1fe6293be019');
   const [showSettings, setShowSettings] = useState(false);
   const { toast } = useToast();
 
@@ -56,17 +56,15 @@ const PromptOptimizer = () => {
       const data = await response.json();
       console.log('Respuesta del webhook:', data);
 
-      // Asumiendo que el webhook devuelve { optimizedPrompt: "...", explanation: "..." }
-      // Ajusta estas propiedades según lo que devuelva tu webhook de n8n
-      const optimizedText = data.optimizedPrompt || data.prompt || data.result || '';
-      const explanation = data.explanation || data.tip || 'Prompt optimizado usando IA avanzada.';
+      // Usar la propiedad "response" como especificaste
+      const optimizedText = data.response || '';
 
       if (!optimizedText) {
-        throw new Error('No se recibió un prompt optimizado válido del webhook');
+        throw new Error('No se recibió una respuesta válida del webhook');
       }
 
       setOptimizedPrompt(optimizedText);
-      setTip(explanation);
+      setTip('Prompt optimizado usando IA avanzada.');
 
       toast({
         title: "¡Prompt optimizado!",
@@ -137,7 +135,7 @@ const PromptOptimizer = () => {
                   <Input
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://n8n-n8n.zdkcmv.easypanel.host/webhook-test/..."
+                    placeholder="https://n8n-n8n.zdkcmv.easypanel.host/webhook/..."
                     className="bg-slate-800 border-slate-600 text-white"
                   />
                   <p className="text-xs text-slate-400 mt-1">
